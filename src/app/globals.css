@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  --background: #000000;
+  --foreground: #ffa028;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: #000000;
+  color: #ffa028;
+  font-family: 'Geist Mono', 'Courier New', monospace;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
