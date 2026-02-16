@@ -13,6 +13,7 @@ export class MathOverlayRenderer {
     lockoutActive: boolean,
     urgency: number, // 0-1, 1 = about to die
     wrongFlash: boolean,
+    panelCenterX: number,
   ) {
     if (!question) {
       this.answerRegions = [];
@@ -21,8 +22,8 @@ export class MathOverlayRenderer {
 
     const panelW = Math.min(320, w - 40);
     const panelH = 160;
-    const panelX = w - panelW - 15;
-    const panelY = h - panelH - 40;
+    const panelX = Math.max(5, Math.min(w - panelW - 5, panelCenterX - panelW / 2));
+    const panelY = (h - panelH) / 2;
 
     // Panel background
     ctx.fillStyle = COLORS.PANEL_BG;

@@ -3,7 +3,6 @@ import { GATES } from '../constants';
 
 export class GateManager {
   gates: Gate[] = [];
-  private nextSpawnX = 0;
   private currentPrice: number = GATES.INITIAL_PRICE;
   scrollSpeed: number = GATES.INITIAL_SPEED;
 
@@ -18,7 +17,6 @@ export class GateManager {
     for (const g of this.gates) g.deactivate();
     this.scrollSpeed = GATES.INITIAL_SPEED;
     this.currentPrice = GATES.INITIAL_PRICE;
-    this.nextSpawnX = canvasWidth + 200;
   }
 
   getGapSize(score: number): number {
@@ -31,7 +29,7 @@ export class GateManager {
 
   update(dt: number, canvasWidth: number, canvasHeight: number, score: number) {
     this.scrollSpeed = this.getSpeed(score);
-    const minSpacing = this.scrollSpeed * GATES.SPACING_MIN_TIME;
+    const minSpacing = GATES.SPACING_PX;
 
     // Move active gates
     for (const g of this.gates) {
@@ -57,9 +55,9 @@ export class GateManager {
         const gapCenterY = minY + Math.random() * (maxY - minY);
 
         this.currentPrice += GATES.PRICE_DRIFT * (0.5 + Math.random());
-        const spawnX = Math.max(this.nextSpawnX, rightMostX + minSpacing);
+        const hasActive = this.gates.some(g => g.active && g !== gate);
+        const spawnX = hasActive ? rightMostX + minSpacing : canvasWidth + 200;
         gate.init(spawnX, gapCenterY, gapSize, this.currentPrice);
-        this.nextSpawnX = spawnX + minSpacing;
       }
     }
   }
@@ -69,7 +67,7 @@ export class GateManager {
     for (const g of this.gates) {
       if (g.active && g.x > maxX) maxX = g.x;
     }
-    return maxX === -Infinity ? 0 : maxX;
+    return maxX;
   }
 
   private getInactive(): Gate | null {

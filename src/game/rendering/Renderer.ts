@@ -52,6 +52,7 @@ export class Renderer {
     restartReady: boolean,
     paused: boolean,
     urgency: number,
+    mathPanelCenterX: number,
   ) {
     // Background
     this.bg.render(ctx, w, h);
@@ -62,6 +63,11 @@ export class Renderer {
     // Candlestick trail (between gates and player)
     if (state === GameState.PLAYING || state === GameState.GAME_OVER) {
       this.trailR.render(ctx, trail.candles);
+    }
+
+    // Math overlay (before player so bird draws on top)
+    if (state === GameState.PLAYING) {
+      this.mathR.render(ctx, w, h, mathSystem.currentQuestion, mathSystem.lockoutTimer > 0, urgency, this.wrongFlashTimer > 0, mathPanelCenterX);
     }
 
     // Player
@@ -80,7 +86,6 @@ export class Renderer {
     // State-specific overlays
     if (state === GameState.PLAYING) {
       this.hudR.render(ctx, w, score, pnl, highScore, streak, multiplier);
-      this.mathR.render(ctx, w, h, mathSystem.currentQuestion, mathSystem.lockoutTimer > 0, urgency, this.wrongFlashTimer > 0);
     } else if (state === GameState.MENU) {
       this.renderMenu(ctx, w, h, menuTime);
     } else if (state === GameState.GAME_OVER) {

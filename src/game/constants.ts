@@ -54,7 +54,7 @@ export const GATES = {
   INITIAL_SPEED: 120,       // px/s
   MAX_SPEED: 220,           // px/s
   SPEED_INCREASE: 4,        // px/s per gate cleared
-  SPACING_MIN_TIME: 1.5,    // Minimum seconds between gates
+  SPACING_PX: 600,          // Fixed pixel distance between gates
   POOL_SIZE: 6,
   EDGE_MARGIN: 60,          // Minimum gap distance from top/bottom
   INITIAL_PRICE: 100,

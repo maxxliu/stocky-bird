@@ -309,6 +309,18 @@ export class GameEngine {
       }
     }
 
+    // Calculate math panel horizontal center (between passed gate and next gate)
+    let mathPanelCenterX = this.w / 2;
+    if (this.state === GameState.PLAYING && this.mathSystem.isActive) {
+      const passedGate = this.findPendingQuestionGate();
+      const nextGate = this.gateManager.getNextGate(this.player.x);
+      if (passedGate && nextGate) {
+        mathPanelCenterX = (passedGate.x + nextGate.x) / 2;
+      } else if (passedGate) {
+        mathPanelCenterX = passedGate.x + GATES.SPACING_PX / 2;
+      }
+    }
+
     this.renderer.render(
       this.ctx,
       this.w,
@@ -327,6 +339,7 @@ export class GameEngine {
       this.deathTimer > FLOW.RESTART_DELAY,
       this.paused,
       urgency,
+      mathPanelCenterX,
     );
   }
 }
