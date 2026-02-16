@@ -28,10 +28,11 @@ Every element reinforces the financial trading metaphor:
 ## Core Loop
 
 1. **Flap** to navigate through the gap in the next gate
-2. **Answer** the math question that appears after clearing the gate
+2. **Answer** the math question that appears in the world-space panel between gates
 3. **Earn P&L** — correct answers on the first try build a streak multiplier (up to 2x)
 4. **Survive** — difficulty ramps with each gate (gap shrinks, speed increases)
 5. **Die** if you hit a pipe, the floor/ceiling, or reach the next gate without answering
+6. **Leave a trail** — a candlestick chart forms behind the player as you fly
 
 ## Tech Philosophy
 

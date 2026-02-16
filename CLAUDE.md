@@ -25,17 +25,18 @@ src/
       Player.ts           → Candlestick bird (position, velocity, hitbox, physics)
       Gate.ts             → Single pipe pair (support/resistance level)
       GateManager.ts      → Object pool of 6 gates, spawning & recycling
+      CandlestickTrail.ts → Scrolling candlestick chart trail behind player
     rendering/
       Renderer.ts         → Master dispatcher → sub-renderers below
       BackgroundRenderer.ts
       PlayerRenderer.ts
       GateRenderer.ts
+      TrailRenderer.ts
       HudRenderer.ts
       MathOverlayRenderer.ts
     state/
       GameState.ts        → Enum: MENU | PLAYING | GAME_OVER
     systems/
-      Physics.ts          → Delegates to Player.update()
       Collision.ts        → AABB floor/ceiling/pipe checks
       MathQuestion.ts     → Question generation (4 tiers) + answer logic
 ```

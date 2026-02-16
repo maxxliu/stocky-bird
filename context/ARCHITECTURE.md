@@ -24,13 +24,16 @@ page.tsx
               ├── Player             (position, velocity, physics)
               ├── GateManager
               │     └── Gate[6]      (pre-allocated object pool)
+              ├── CandlestickTrail   (scrolling chart trail behind player)
               ├── MathQuestionSystem (question gen, answer validation)
               └── Renderer           (master dispatcher)
                     ├── BackgroundRenderer
-                    ├── PlayerRenderer
                     ├── GateRenderer
+                    ├── TrailRenderer
+                    ├── MathOverlayRenderer
+                    ├── PlayerRenderer
                     ├── HudRenderer
-                    └── MathOverlayRenderer
+                    └── (Menu/GameOver/Pause overlays inline in Renderer)
 ```
 
 ## Data Flow
@@ -60,7 +63,7 @@ GameEngine.start()
         2. dt = (now - lastTime) / 1000       // seconds
         3. if dt > 1.0s → auto-pause          // tab was hidden
         4. clamp dt to 0.05s                  // prevent spiral of death
-        5. if paused → render only, wait for flap to unpause
+        5. if paused → render only, wait for click to unpause
         6. update(dt)
               a. renderer.update(dt)           // grid scroll, flash timers
               b. mathSystem.updateLockout(dt)  // wrong-answer cooldown
@@ -70,8 +73,9 @@ GameEngine.start()
                  GAME_OVER: fall animation, wait for restart input
         7. render()
               a. compute math urgency (0-1)
-              b. Renderer.render() → all sub-renderers
-              c. sync answerRegions
+              b. compute mathPanelCenterX (midpoint between passed & next gate)
+              c. Renderer.render() → all sub-renderers
+              d. sync answerRegions
 ```
 
 ### updatePlaying(dt) Detail
@@ -80,11 +84,12 @@ GameEngine.start()
 2. Consume answer → `mathSystem.tryAnswer(index)`
    - Correct: screen flash, mark answered, update streak/multiplier, add P&L
    - Wrong: screen flash, deduct $50, reset streak
-3. `player.update(dt, canvasHeight)` — gravity, velocity clamp, position, rotation
+3. `player.update(dt, canvasHeight)` — gravity, velocity clamp, position, color
 4. `gateManager.update(dt, w, h, score)` — scroll gates, recycle, spawn
-5. Floor/ceiling collision check → die
-6. Per-gate pipe collision (AABB) → die
-7. Per-gate pass check:
+5. `trail.update(dt, player, gateManager.scrollSpeed)` — record candle data
+6. Floor/ceiling collision check → die
+7. Per-gate pipe collision (AABB) → die
+8. Per-gate pass check:
    - If previous question unanswered → die
    - Otherwise: increment score, add P&L, play sound, generate new question
 
@@ -92,27 +97,35 @@ GameEngine.start()
 
 ### Player
 
-Owns its own physics (gravity, jump impulse, terminal velocity, position clamping). `Physics.ts` is a thin wrapper that delegates to `Player.update()`.
+Owns its own physics (gravity, jump impulse, terminal velocity, position clamping). The `rotation` property is set to 0 during gameplay; rotation only applies during the game-over fall animation.
 
-Properties: `x`, `y`, `vy` (velocity), `rotation`, `width`, `height`
+Properties: `x`, `y`, `vy` (velocity), `rotation`, `isGreen`
 
 ### Gate
 
-Simple data container: `x`, `gapY`, `gapSize`, `passed`, `active`, `questionAnswered`, `priceLabel`
+Simple data container with computed price labels.
 
-Methods: `init(x, gapY, gapSize, price)`, `deactivate()`, `getTopPipe()`, `getBottomPipe()`
+Properties: `x`, `gapCenterY`, `gapSize`, `passed`, `active`, `questionAnswered`, `priceResistance`, `priceSupport`
+
+Methods: `init(x, gapCenterY, gapSize, priceBase)`, `deactivate()`
+
+Getters: `gapTop`, `gapBottom`
 
 ### GateManager
 
-Object pool pattern. Pre-allocates 6 `Gate` instances. Tracks `spawnTimer` and recycles gates that scroll off-screen. Spawning logic uses `SPACING_MIN_TIME` to ensure minimum distance between gates.
+Object pool pattern. Pre-allocates 6 `Gate` instances. Recycles gates that scroll off-screen. Spawning uses fixed pixel spacing (`GATES.SPACING_PX = 600`) to ensure consistent distance between gates regardless of speed.
+
+### CandlestickTrail
+
+Generates a candlestick chart trail behind the player. Every 0.15s, finalizes a candle from player Y-position data (open/close/high/low). Candles scroll left with the game world. Max 60 candles, pruned when off-screen.
 
 ## Collision System
 
 Pure AABB (Axis-Aligned Bounding Box) checks:
 
 - `checkFloorCeiling(player, canvasHeight)` — top/bottom bounds
-- `checkGateCollision(player, gate)` — tests against `gate.getTopPipe()` and `gate.getBottomPipe()` rectangles
-- `checkGatePassed(player, gate)` — player.x crossed gate.x + PIPE_WIDTH
+- `checkGateCollision(player, gate, canvasHeight)` — tests player hitbox against top pipe (0 to gapTop) and bottom pipe (gapBottom to canvasHeight) rectangles
+- `checkGatePassed(player, gate)` — player.x crossed gate.x + PIPE_WIDTH/2
 
 ## State Machine
 
@@ -123,7 +136,7 @@ MENU → PLAYING        (on flap input)
 PLAYING → GAME_OVER   (on collision or unanswered question)
 GAME_OVER → MENU      (on input after 1s delay, resets all state)
 Any → paused          (tab hidden > 1s)
-paused → resume       (on flap input)
+paused → resume       (on click)
 ```
 
 ## Canvas Rendering Pipeline
@@ -132,8 +145,9 @@ Each frame, renderers execute in this order (back to front):
 
 1. **BackgroundRenderer** — clear canvas, grid lines, ticker tape
 2. **GateRenderer** — pipes, dashed lines, price labels, gap glow
-3. **PlayerRenderer** — candlestick body + wicks (with save/restore for rotation)
-4. **HudRenderer** — P&L panel, high score panel
-5. **MathOverlayRenderer** — question panel + answer buttons (when question is active)
-6. **Flash overlay** — screen-wide transparent color rect (when flash timer > 0)
-7. **Menu/GameOver/Pause overlays** — state-specific UI panels
+3. **TrailRenderer** — candlestick trail candles (during PLAYING/GAME_OVER)
+4. **MathOverlayRenderer** — world-space question panel between gates (during PLAYING)
+5. **PlayerRenderer** — candlestick body + wicks (always on top of world elements)
+6. **Flash overlay** — screen-wide transparent color rect (death/correct flashes)
+7. **HudRenderer** — P&L panel, high score panel (screen-fixed, during PLAYING)
+8. **Menu/GameOver/Pause overlays** — state-specific UI panels
